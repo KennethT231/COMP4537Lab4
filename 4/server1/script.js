@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3000/api/definitions";
+const API_URL = "https://orca-app-czqij.ondigitalocean.app/api/definitions";
 
 // Handle adding a word
 document.addEventListener("DOMContentLoaded", function () {
