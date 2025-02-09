@@ -25,7 +25,7 @@ const server = http.createServer((req, res) => {
         req.on("end", () => {
             try {
                 const { word, definition } = JSON.parse(body);
-                if (!word || !definition || /^[a-zA-Z]+$/.test(word)) {
+                if (!word || !definition || /\d/.test(word)) {
                     res.writeHead(400, { "Content-Type": "application/json" });
                     return res.end(JSON.stringify({ message: "Invalid input: Words must contain only letters." }));
                 }
@@ -49,22 +49,28 @@ const server = http.createServer((req, res) => {
             }
         });
 
-    } else if (pathname === "/api/definitions/" && req.method === "GET") {
+    } else if (req.method === "GET" && pathname.startsWith("/api/definitions")) {
+        requestCount++;
+        if (pathname === "/api/definitions/all") {
+            res.writeHead(200);
+            return res.end(JSON.stringify({ requestCount, totalEntries: dictionary.length, dictionary }));
+        }
+
         const word = query.word;
-        if (!word || /^[a-zA-Z]+$/.test(word)) {
-            res.writeHead(400, { "Content-Type": "application/json" });
-            return res.end(JSON.stringify({ message: "Invalid input: Words must contain only letters." }));
-        }
-
-        const entry = dictionary.find(entry => entry.word.toLowerCase() === word.toLowerCase());
-        if (entry) {
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ word: entry.word, definition: entry.definition, requestCount }));
+        if (word) {
+            // Return definition of a single word
+            const entry = dictionary.find(item => item.word.toLowerCase() === word.toLowerCase());
+            if (entry) {
+                res.writeHead(200);
+                return res.end(JSON.stringify({ requestCount, word: entry.word, definition: entry.definition }));
+            } else {
+                res.writeHead(404);
+                return res.end(JSON.stringify({ requestCount, message: `Word '${word}' not found!` }));
+            }
         } else {
-            res.writeHead(404, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ message: `Request# ${requestCount}, word '${word}' not found!` }));
+            res.writeHead(400);
+            return res.end(JSON.stringify({ requestCount, message: "Invalid request. Use ?word=yourword" }));
         }
-
     } else {
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ message: "Invalid route." }));
